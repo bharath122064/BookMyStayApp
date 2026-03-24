@@ -5,7 +5,9 @@ public class BookMyStayApp {
     public static void main(String[] args) {
 
         RoomInventory inventory = new RoomInventory();
-        inventory.displayInventory();
+        SearchService search = new SearchService(inventory);
+
+        search.displayAvailableRooms();
     }
 }
 
@@ -21,26 +23,58 @@ class RoomInventory {
         availability.put("Suite Room", 2);
     }
 
-    public void displayInventory() {
+    public int getAvailability(String roomType) {
+        return availability.getOrDefault(roomType, 0);
+    }
+}
 
-        System.out.println("Hotel Room Inventory Status\n");
+class Room {
 
-        System.out.println("Single Room:");
-        System.out.println("Beds: 1");
-        System.out.println("Size: 250 sqft");
-        System.out.println("Price per night: 1500.0");
-        System.out.println("Available Rooms: " + availability.get("Single Room") + "\n");
+    String type;
+    int beds;
+    int size;
+    double price;
 
-        System.out.println("Double Room:");
-        System.out.println("Beds: 2");
-        System.out.println("Size: 400 sqft");
-        System.out.println("Price per night: 2500.0");
-        System.out.println("Available Rooms: " + availability.get("Double Room") + "\n");
+    public Room(String type, int beds, int size, double price) {
+        this.type = type;
+        this.beds = beds;
+        this.size = size;
+        this.price = price;
+    }
+}
 
-        System.out.println("Suite Room:");
-        System.out.println("Beds: 3");
-        System.out.println("Size: 750 sqft");
-        System.out.println("Price per night: 5000.0");
-        System.out.println("Available Rooms: " + availability.get("Suite Room"));
+class SearchService {
+
+    private RoomInventory inventory;
+
+    public SearchService(RoomInventory inventory) {
+        this.inventory = inventory;
+    }
+
+    public void displayAvailableRooms() {
+
+        System.out.println("Available Rooms\n");
+
+        Room single = new Room("Single Room", 1, 250, 1500.0);
+        Room doubleRoom = new Room("Double Room", 2, 400, 2500.0);
+        Room suite = new Room("Suite Room", 3, 750, 5000.0);
+
+        display(single);
+        display(doubleRoom);
+        display(suite);
+    }
+
+    private void display(Room room) {
+
+        int available = inventory.getAvailability(room.type);
+
+        if (available > 0) {
+            System.out.println(room.type + ":");
+            System.out.println("Beds: " + room.beds);
+            System.out.println("Size: " + room.size + " sqft");
+            System.out.println("Price per night: " + room.price);
+            System.out.println("Available Rooms: " + available);
+            System.out.println();
+        }
     }
 }
