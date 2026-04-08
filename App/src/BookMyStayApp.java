@@ -1,47 +1,47 @@
 import java.util.*;
 
-class Reservation {
-    String guestName;
-    String roomType;
-
-    public Reservation(String guestName, String roomType) {
-        this.guestName = guestName;
-        this.roomType = roomType;
+class InvalidBookingException extends Exception {
+    public InvalidBookingException(String message) {
+        super(message);
     }
 }
 
-class BookingHistory {
-    private List<Reservation> history = new ArrayList<>();
+class BookingService {
+    private Map<String, Integer> inventory = new HashMap<>();
 
-    public void addReservation(Reservation r) {
-        history.add(r);
+    public BookingService() {
+        inventory.put("Single", 2);
+        inventory.put("Double", 2);
+        inventory.put("Suite", 1);
     }
 
-    public List<Reservation> getHistory() {
-        return history;
-    }
-}
-
-class BookingReportService {
-    public void generateReport(List<Reservation> history) {
-        System.out.println("Booking History and Reporting\n");
-        System.out.println("Booking History Report\n");
-        for (Reservation r : history) {
-            System.out.println("Guest: " + r.guestName + ", Room Type: " + r.roomType);
+    public void bookRoom(String guestName, String roomType) throws InvalidBookingException {
+        if (!inventory.containsKey(roomType)) {
+            throw new InvalidBookingException("Invalid room type selected");
         }
+
+        if (inventory.get(roomType) <= 0) {
+            throw new InvalidBookingException("No rooms available for " + roomType);
+        }
+
+        inventory.put(roomType, inventory.get(roomType) - 1);
+        System.out.println("Booking confirmed for " + guestName + " (" + roomType + ")");
     }
 }
 
 public class BookMyStayApp {
     public static void main(String[] args) {
 
-        BookingHistory history = new BookingHistory();
+        BookingService service = new BookingService();
 
-        history.addReservation(new Reservation("Abhi", "Single"));
-        history.addReservation(new Reservation("Subha", "Double"));
-        history.addReservation(new Reservation("Vanmathi", "Suite"));
+        try {
+            service.bookRoom("Abhi", "Single");
+            service.bookRoom("Subha", "Suite");
+            service.bookRoom("Vanmathi", "Suite");
+        } catch (InvalidBookingException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
 
-        BookingReportService reportService = new BookingReportService();
-        reportService.generateReport(history.getHistory());
+        System.out.println("System continues running...");
     }
 }
