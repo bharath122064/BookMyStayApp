@@ -1,60 +1,71 @@
+import java.io.*;
 import java.util.*;
 
-class BookingService {
+class BookingService implements Serializable {
 
     private Map<String, Integer> inventory = new HashMap<>();
+    private List<String> bookings = new ArrayList<>();
 
     public BookingService() {
-        inventory.put("Single", 1);
+        inventory.put("Single", 2);
+        inventory.put("Double", 2);
     }
 
-    public synchronized void bookRoom(String guestName, String roomType) {
-        if (inventory.get(roomType) > 0) {
-            System.out.println(guestName + " is booking " + roomType);
+    public void bookRoom(String guestName, String roomType) {
+        if (inventory.containsKey(roomType) && inventory.get(roomType) > 0) {
             inventory.put(roomType, inventory.get(roomType) - 1);
+            bookings.add(guestName + "-" + roomType);
             System.out.println("Booking confirmed for " + guestName);
         } else {
-            System.out.println("No rooms available for " + guestName);
+            System.out.println("Booking failed for " + guestName);
         }
     }
 
-    public void showInventory() {
-        System.out.println("Final Availability: " + inventory.get("Single"));
+    public void showState() {
+        System.out.println("Current Inventory: " + inventory);
+        System.out.println("Booking History: " + bookings);
     }
 }
 
-class BookingThread extends Thread {
-    BookingService service;
-    String guestName;
+class PersistenceService {
 
-    public BookingThread(BookingService service, String guestName) {
-        this.service = service;
-        this.guestName = guestName;
+    public void save(BookingService service, String fileName) {
+        try {
+            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(fileName));
+            out.writeObject(service);
+            out.close();
+            System.out.println("State saved successfully");
+        } catch (Exception e) {
+            System.out.println("Error saving state");
+        }
     }
 
-    public void run() {
-        service.bookRoom(guestName, "Single");
+    public BookingService load(String fileName) {
+        try {
+            ObjectInputStream in = new ObjectInputStream(new FileInputStream(fileName));
+            BookingService service = (BookingService) in.readObject();
+            in.close();
+            System.out.println("State loaded successfully");
+            return service;
+        } catch (Exception e) {
+            System.out.println("No previous data found, starting fresh");
+            return new BookingService();
+        }
     }
 }
 
 public class BookMyStayApp {
     public static void main(String[] args) {
 
-        BookingService service = new BookingService();
+        PersistenceService ps = new PersistenceService();
 
-        Thread t1 = new BookingThread(service, "Guest1");
-        Thread t2 = new BookingThread(service, "Guest2");
+        BookingService service = ps.load("data.ser");
 
-        t1.start();
-        t2.start();
+        service.bookRoom("Abhi", "Single");
+        service.bookRoom("Subha", "Double");
 
-        try {
-            t1.join();
-            t2.join();
-        } catch (Exception e) {
-            System.out.println(e);
-        }
+        service.showState();
 
-        service.showInventory();
+        ps.save(service, "data.ser");
     }
 }
