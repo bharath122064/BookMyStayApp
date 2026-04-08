@@ -3,46 +3,37 @@ import java.util.*;
 class BookingService {
 
     private Map<String, Integer> inventory = new HashMap<>();
-    private Map<String, String> reservations = new HashMap<>();
-    private Stack<String> rollbackStack = new Stack<>();
 
     public BookingService() {
-        inventory.put("Single", 5);
-        inventory.put("Double", 3);
-        inventory.put("Suite", 2);
+        inventory.put("Single", 1);
     }
 
-    public void addReservation(String reservationId, String roomType) {
-        reservations.put(reservationId, roomType);
-        inventory.put(roomType, inventory.get(roomType) - 1);
-    }
-
-    public void cancelBooking(String reservationId) {
-        if (!reservations.containsKey(reservationId)) {
-            System.out.println("Invalid cancellation request");
-            return;
-        }
-
-        String roomType = reservations.get(reservationId);
-
-        rollbackStack.push(reservationId);
-        inventory.put(roomType, inventory.get(roomType) + 1);
-        reservations.remove(reservationId);
-
-        System.out.println("Booking cancelled successfully. Inventory restored for room type: " + roomType);
-    }
-
-    public void showRollbackHistory() {
-        System.out.println("\nRollback History (Most Recent First):");
-        Stack<String> temp = (Stack<String>) rollbackStack.clone();
-
-        while (!temp.isEmpty()) {
-            System.out.println("Released Reservation ID: " + temp.pop());
+    public synchronized void bookRoom(String guestName, String roomType) {
+        if (inventory.get(roomType) > 0) {
+            System.out.println(guestName + " is booking " + roomType);
+            inventory.put(roomType, inventory.get(roomType) - 1);
+            System.out.println("Booking confirmed for " + guestName);
+        } else {
+            System.out.println("No rooms available for " + guestName);
         }
     }
 
-    public void showInventory(String roomType) {
-        System.out.println("\nUpdated " + roomType + " Room Availability: " + inventory.get(roomType));
+    public void showInventory() {
+        System.out.println("Final Availability: " + inventory.get("Single"));
+    }
+}
+
+class BookingThread extends Thread {
+    BookingService service;
+    String guestName;
+
+    public BookingThread(BookingService service, String guestName) {
+        this.service = service;
+        this.guestName = guestName;
+    }
+
+    public void run() {
+        service.bookRoom(guestName, "Single");
     }
 }
 
@@ -51,10 +42,19 @@ public class BookMyStayApp {
 
         BookingService service = new BookingService();
 
-        service.addReservation("Single-1", "Single");
-        service.cancelBooking("Single-1");
+        Thread t1 = new BookingThread(service, "Guest1");
+        Thread t2 = new BookingThread(service, "Guest2");
 
-        service.showRollbackHistory();
-        service.showInventory("Single");
+        t1.start();
+        t2.start();
+
+        try {
+            t1.join();
+            t2.join();
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+
+        service.showInventory();
     }
 }
